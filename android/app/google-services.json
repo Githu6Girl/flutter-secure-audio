@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "583975111750",
+    "project_id": "audio-app-494ef",
+    "storage_bucket": "audio-app-494ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:583975111750:android:1cb03b4ba8b92004494e47",
+        "android_client_info": {
+          "package_name": "com.meriem.audio_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "583975111750-bdoois9vnth0ug27b3a72e7fh9im4pm0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu9xwPb_iQhDcWfMUAVryWpd2Lnlq_dNk"
+        }
+      ],
+      "configuration_version": "1"
+    }
+  ]
+}
