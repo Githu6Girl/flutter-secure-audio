@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/app_background.dart';
+import '../widgets/glass_components.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -15,7 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   DateTime? _selectedDate;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -35,12 +37,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final initial = _selectedDate ?? DateTime(now.year - 13, now.month, now.day);
-    
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF6366F1),
+              onPrimary: Colors.white,
+              surface: Color(0xFF1E293B),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -49,64 +64,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    // Validation
-    if (_nameController.text.isEmpty ||
-        _surnameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs')),
-      );
+    if (_nameController.text.isEmpty || _surnameController.text.isEmpty ||
+        _emailController.text.isEmpty || _passwordController.text.isEmpty || _selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs')));
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Les mots de passe ne correspondent pas')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Les mots de passe ne correspondent pas')));
       return;
     }
 
-    if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le mot de passe doit contenir au moins 6 caractères'),
-        ),
-      );
-      return;
-    }
-
-    // Calculate age
     final now = DateTime.now();
     int age = now.year - _selectedDate!.year;
-    if (now.month < _selectedDate!.month ||
-        (now.month == _selectedDate!.month && now.day < _selectedDate!.day)) {
-      age--;
-    }
+    if (now.month < _selectedDate!.month || (now.month == _selectedDate!.month && now.day < _selectedDate!.day)) age--;
 
     if (age < 13) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Vous devez avoir au moins 13 ans pour vous inscrire'),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous devez avoir au moins 13 ans')));
       return;
     }
 
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vous devez accepter les conditions d\'utilisation'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vous devez accepter les conditions')));
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
       await context.read<AuthService>().register(
         email: _emailController.text.trim(),
@@ -115,177 +98,117 @@ class _RegisterScreenState extends State<RegisterScreen> {
         lastName: _surnameController.text.trim(),
         dateOfBirth: _selectedDate!,
       );
-      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Inscription réussie! Veuillez vous connecter.')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inscription réussie!')));
         Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Inscription'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Créer votre compte',
-                style: Theme.of(context).textTheme.displaySmall,
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Prénom',
-                  prefixIcon: Icon(Icons.person_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _surnameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nom',
-                  prefixIcon: Icon(Icons.person_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: _selectDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today_outlined),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedDate != null
-                              ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                              : 'Sélectionnez votre date de naissance',
-                          style: Theme.of(context).textTheme.bodyMedium,
+      body: AppBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children:[
+                const Text('Créer un compte', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Rejoignez l\'expérience Mawja', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 16)),
+                const SizedBox(height: 32),
+
+                GlassTextField(controller: _nameController, label: 'Prénom', prefixIcon: Icons.person_outline),
+                const SizedBox(height: 16),
+
+                GlassTextField(controller: _surnameController, label: 'Nom', prefixIcon: Icons.person_outline),
+                const SizedBox(height: 16),
+
+                GlassTextField(controller: _emailController, label: 'Email', prefixIcon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 16),
+
+                GestureDetector(
+                  onTap: _selectDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.07),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                    ),
+                    child: Row(
+                      children:[
+                        const Icon(Icons.calendar_today_outlined, color: Color(0xFF6366F1)),
+                        const SizedBox(width: 12),
+                        Text(
+                          _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : 'Date de naissance',
+                          style: TextStyle(color: _selectedDate != null ? Colors.white : Colors.white.withOpacity(0.6), fontSize: 14),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Mot de passe',
-                  prefixIcon: const Icon(Icons.lock_outlined),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+                      ],
                     ),
-                    onPressed: () {
-                      setState(() => _obscurePassword = !_obscurePassword);
-                    },
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  labelText: 'Confirmer le mot de passe',
-                  prefixIcon: const Icon(Icons.lock_outlined),
+                const SizedBox(height: 16),
+
+                GlassTextField(
+                  controller: _passwordController, label: 'Mot de passe', prefixIcon: Icons.lock_outlined, obscureText: _obscurePassword,
                   suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () {
-                      setState(
-                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                      );
-                    },
+                    icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.white54),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreeToTerms,
-                    onChanged: (value) {
-                      setState(() => _agreeToTerms = value ?? false);
-                    },
+                const SizedBox(height: 16),
+
+                GlassTextField(
+                  controller: _confirmPasswordController, label: 'Confirmer mot de passe', prefixIcon: Icons.lock_outlined, obscureText: _obscureConfirmPassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.white54),
+                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                   ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() => _agreeToTerms = !_agreeToTerms);
-                      },
-                      child: const Text(
-                        'J\'accepte les conditions d\'utilisation et la politique de confidentialité',
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children:[
+                    Theme(
+                      data: ThemeData(unselectedWidgetColor: Colors.white54),
+                      child: Checkbox(
+                        value: _agreeToTerms,
+                        activeColor: const Color(0xFF6366F1),
+                        checkColor: Colors.white,
+                        onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
+                    Expanded(
+                      child: Text(
+                        'J\'accepte les conditions d\'utilisation',
+                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                GradientButton(
+                  text: 'S\'inscrire',
+                  isLoading: _isLoading,
                   onPressed: _isLoading ? null : _register,
-                  child: _isLoading
-                      ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                      : const Text('S\'inscrire'),
                 ),
-              ),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

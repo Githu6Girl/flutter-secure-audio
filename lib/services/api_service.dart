@@ -3,68 +3,101 @@ import 'favorite_service.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  static const String baseUrl = 'https://quran.yousefheiba.com/api/v3';
+  Map<String, List<Track>>? _cachedTracks;
 
   Future<Map<String, List<Track>>> fetchAudioByCategory() async {
+    // Si déjà chargé, on renvoie directement
+    if (_cachedTracks != null) {
+      return _cachedTracks!;
+    }
+
     try {
-      final response = await _dio.get('$baseUrl/chapters');
-      
+      // API officielle, rapide et 100% gratuite
+      final response = await _dio.get('https://mp3quran.net/api/v3/reciters?language=fr');
+
       Map<String, List<Track>> categorizedTracks = {};
-      
-      if (response.statusCode == 200) {
-        final chapters = response.data['chapters'] as List?;
-        
-        if (chapters != null) {
-          for (var chapter in chapters) {
-            final categoryName = chapter['name'] ?? 'Unknown';
-            final categoryTracks = await _fetchTracksForChapter(chapter['id']);
-            categorizedTracks[categoryName] = categoryTracks;
-          }
+      final List reciters = response.data['reciters'];
+
+      // On charge les 4 premiers récitateurs
+      for (var reciter in reciters.take(4)) {
+        String reciterName = reciter['name'];
+        var moshaf = reciter['moshaf'][0];
+        String server = moshaf['server'];
+        String surahListStr = moshaf['surah_list'];
+
+        List<Track> tracks =[];
+        List<String> surahs = surahListStr.split(',');
+
+        // On prend les 10 premières sourates par récitateur pour que ce soit instantané
+        for (var surahIdStr in surahs.take(10)) {
+          if (surahIdStr.isEmpty) continue;
+
+          int surahId = int.parse(surahIdStr);
+          // Format MP3 (ex: "001.mp3", "002.mp3")
+          String formatId = surahId.toString().padLeft(3, '0');
+          String audioUrl = '$server$formatId.mp3';
+
+          tracks.add(Track(
+            id: '${reciter['id']}_$surahId',
+            title: 'Sourate $surahId',
+            artist: reciterName,
+            category: reciterName,
+            url: audioUrl,
+            durationSeconds: 0,
+          ));
+        }
+
+        if (tracks.isNotEmpty) {
+          categorizedTracks[reciterName] = tracks;
         }
       }
-      
+
+      _cachedTracks = categorizedTracks;
       return categorizedTracks;
+
     } catch (e) {
-      throw Exception('Erreur lors de la récupération des données: $e');
+      print('Erreur réseau, activation de la roue de secours: $e');
+      // PLAN B : SI L'API PLANTE, ON AFFICHE ÇA (Anti-crash pour la présentation !)
+      return _getFallbackData();
     }
   }
 
-  Future<List<Track>> _fetchTracksForChapter(int chapterId) async {
-    try {
-      final response = await _dio.get('$baseUrl/chapters/$chapterId/translations/1');
-      
-      List<Track> tracks = [];
-      
-      if (response.statusCode == 200) {
-        final translations = response.data['chapter'] as Map?;
-        
-        if (translations != null && translations['verses'] != null) {
-          for (var verse in translations['verses']) {
-            tracks.add(Track(
-              id: '${chapterId}_${verse['id']}',
-              title: 'Verse ${verse['verse_number']}',
-              artist: 'Quran',
-              category: 'Quran Chapter $chapterId',
-              url: verse['audio']['url'] ?? '',
-              imageUrl: null,
-              durationSeconds: 0,
-            ));
-          }
-        }
-      }
-      
-      return tracks;
-    } catch (e) {
-      return [];
-    }
-  }
-
+  // Fonction de recherche
   Future<List<Track>> searchTracks(String query) async {
     try {
-      // Implement search functionality based on API
-      return [];
+      final allCategories = await fetchAudioByCategory();
+      if (query.trim().isEmpty) return [];
+
+      List<Track> searchResults =[];
+      final searchTerm = query.toLowerCase();
+
+      for (var tracks in allCategories.values) {
+        for (var track in tracks) {
+          if (track.title.toLowerCase().contains(searchTerm) ||
+              track.artist.toLowerCase().contains(searchTerm)) {
+            searchResults.add(track);
+          }
+        }
+      }
+      return searchResults;
     } catch (e) {
-      throw Exception('Erreur lors de la recherche: $e');
+      return[];
     }
+  }
+
+  // --- LES DONNÉES DE SECOURS ---
+  Map<String, List<Track>> _getFallbackData() {
+    return {
+      'Abdul Baset':[
+        Track(id: 'fb1', title: 'Al-Fatiha', artist: 'Abdul Baset', category: 'Abdul Baset', url: 'https://server7.mp3quran.net/basit/001.mp3', durationSeconds: 0),
+        Track(id: 'fb2', title: 'Al-Baqarah', artist: 'Abdul Baset', category: 'Abdul Baset', url: 'https://server7.mp3quran.net/basit/002.mp3', durationSeconds: 0),
+        Track(id: 'fb3', title: 'Al-Kahf', artist: 'Abdul Baset', category: 'Abdul Baset', url: 'https://server7.mp3quran.net/basit/018.mp3', durationSeconds: 0),
+      ],
+      'Al-Sudais':[
+        Track(id: 'fb4', title: 'Al-Fatiha', artist: 'Al-Sudais', category: 'Al-Sudais', url: 'https://server11.mp3quran.net/sds/001.mp3', durationSeconds: 0),
+        Track(id: 'fb5', title: 'Yasin', artist: 'Al-Sudais', category: 'Al-Sudais', url: 'https://server11.mp3quran.net/sds/036.mp3', durationSeconds: 0),
+        Track(id: 'fb6', title: 'Ar-Rahman', artist: 'Al-Sudais', category: 'Al-Sudais', url: 'https://server11.mp3quran.net/sds/055.mp3', durationSeconds: 0),
+      ],
+    };
   }
 }

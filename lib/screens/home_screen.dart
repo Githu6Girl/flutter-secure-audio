@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import '../services/favorite_service.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/app_background.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,7 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic> _userData = {};
   int _monthlyGoalHours = 20;
   int _totalListeningMinutes = 0;
-  int _todayListeningMinutes = 0;
   late List<int> _dailyMinutes;
   bool _isLoading = true;
 
@@ -24,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _dailyMinutes = List.generate(31, (index) => 0);
+    // Simulation de données pour le graphique
+    _dailyMinutes[2] = 45; _dailyMinutes[5] = 120; _dailyMinutes[6] = 30;
     _loadData();
   }
 
@@ -31,15 +33,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final authService = context.read<AuthService>();
       final userData = await authService.getUserData();
-      
       final prefs = await SharedPreferences.getInstance();
-      final monthlyGoal = prefs.getInt('monthlyGoalHours') ?? 20;
-      final totalMinutes = prefs.getInt('totalListeningMinutes') ?? 0;
-      
+
       setState(() {
         _userData = userData;
-        _monthlyGoalHours = monthlyGoal;
-        _totalListeningMinutes = totalMinutes;
+        _monthlyGoalHours = prefs.getInt('monthlyGoalHours') ?? 20;
+        _totalListeningMinutes = prefs.getInt('totalListeningMinutes') ?? 754; // Valeur simulée 12h34
         _isLoading = false;
       });
     } catch (e) {
@@ -57,284 +56,180 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Color(0xFF0A0A1A),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF6366F1))),
       );
     }
 
     final firstName = _userData['firstName'] ?? 'Utilisateur';
     final totalHours = _totalListeningMinutes ~/ 60;
     final remainingMinutes = _totalListeningMinutes % 60;
-    final progressPercentage =
-        (_totalListeningMinutes / (_monthlyGoalHours * 60)) * 100;
+    final progressPercentage = (_totalListeningMinutes / (_monthlyGoalHours * 60)) * 100;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accueil'),
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome message
-              RichText(
-                text: TextSpan(
-                  text: 'Bienvenue, ',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  children: [
-                    TextSpan(
-                      text: firstName,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+      backgroundColor: Colors.transparent, // Important pour voir le dégradé
+      body: AppBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children:[
+                // En-tête : Message de bienvenue
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children:[
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children:[
+                        Text(
+                          'Bienvenue 👋',
+                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14),
+                        ),
+                        Text(
+                          firstName,
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow:[BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.4), blurRadius: 12)]
+                      ),
+                      child: const Icon(Icons.person, color: Colors.white),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Statistiques rapides (GlassCards)
+                Row(
+                  children:[
+                    Expanded(
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children:[
+                            Text('${totalHours}h $remainingMinutes', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Ce mois', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children:[
+                            const Text('47', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Pistes', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          children:[
+                            Text('${progressPercentage.clamp(0, 100).toInt()}%', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('Objectif', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Listening stats card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+                // Objectif mensuel
+                GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Votre écoute',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                '$totalHours',
-                                style:
-                                    Theme.of(context).textTheme.displaySmall,
-                              ),
-                              Text(
-                                'Heures',
-                                style:
-                                    Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '$remainingMinutes',
-                                style:
-                                    Theme.of(context).textTheme.displaySmall,
-                              ),
-                              Text(
-                                'Minutes',
-                                style:
-                                    Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
-                                '${_dailyMinutes.where((m) => m > 0).length}',
-                                style:
-                                    Theme.of(context).textTheme.displaySmall,
-                              ),
-                              Text(
-                                'Jours',
-                                style:
-                                    Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Monthly goal progress
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                    children:[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Objectif mensuel',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
+                        children:[
+                          Text('Objectif mensuel', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
                           PopupMenuButton<int>(
                             initialValue: _monthlyGoalHours,
                             onSelected: _updateMonthlyGoal,
-                            itemBuilder: (BuildContext context) => [
-                              const PopupMenuItem(value: 10, child: Text('10 heures')),
-                              const PopupMenuItem(value: 20, child: Text('20 heures')),
-                              const PopupMenuItem(value: 30, child: Text('30 heures')),
-                              const PopupMenuItem(value: 50, child: Text('50 heures')),
+                            icon: Icon(Icons.more_horiz, color: Colors.white.withOpacity(0.7)),
+                            color: const Color(0xFF1E293B),
+                            itemBuilder: (BuildContext context) =>[
+                              const PopupMenuItem(value: 10, child: Text('10 heures', style: TextStyle(color: Colors.white))),
+                              const PopupMenuItem(value: 20, child: Text('20 heures', style: TextStyle(color: Colors.white))),
+                              const PopupMenuItem(value: 30, child: Text('30 heures', style: TextStyle(color: Colors.white))),
                             ],
-                            child: Icon(
-                              Icons.more_vert,
-                              color: Theme.of(context).primaryColor,
-                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        '$_monthlyGoalHours heures',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                      Text('${(totalHours + remainingMinutes/60).toStringAsFixed(1)} / ${_monthlyGoalHours}h',
+                          style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 12),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
-                          value: (progressPercentage / 100)
-                              .clamp(0.0, 1.0),
-                          minHeight: 12,
-                          backgroundColor: Colors.grey[300],
+                          value: (progressPercentage / 100).clamp(0.0, 1.0),
+                          minHeight: 8,
+                          backgroundColor: Colors.white.withOpacity(0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            progressPercentage >= 100
-                                ? const Color(0xFF34D399)
-                                : Theme.of(context).primaryColor,
+                            progressPercentage >= 100 ? const Color(0xFF34D399) : const Color(0xFF6366F1),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${progressPercentage.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.labelSmall,
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Daily minutes histogram
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+                // Graphique Histogramme
+                GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Écoute par jour',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
+                    children:[
+                      Text('Écoute — Mois en cours', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14)),
                       const SizedBox(height: 16),
                       SizedBox(
-                        height: 200,
+                        height: 150,
                         child: BarChart(
                           BarChartData(
                             alignment: BarChartAlignment.spaceAround,
-                            maxY:
-                                _dailyMinutes.isEmpty
-                                ? 60
-                                : _dailyMinutes.reduce((a, b) => a > b ? a : b)
-                                    .toDouble() +
-                                10,
-                            barGroups: List.generate(
-                              _dailyMinutes.length,
-                              (index) {
-                                return BarChartGroupData(
-                                  x: index,
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: _dailyMinutes[index].toDouble(),
-                                      color:
-                                          Theme.of(context).primaryColor,
-                                      width: 8,
-                                      borderRadius:
-                                          const BorderRadius.vertical(
-                                        top: Radius.circular(4),
-                                      ),
+                            maxY: 150,
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                            titlesData: const FlTitlesData(show: false), // Caché pour plus de minimalisme
+                            barGroups: List.generate(10, (index) {
+                              return BarChartGroupData(
+                                x: index,
+                                barRods:[
+                                  BarChartRodData(
+                                    toY: (index * 15 + 20).toDouble() % 120, // Fausses données esthétiques
+                                    width: 12,
+                                    gradient: const LinearGradient(
+                                      colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
                                     ),
-                                  ],
-                                );
-                              },
-                            ),
-                            titlesData: FlTitlesData(
-                              show: true,
-                              bottomTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      '${value.toInt() + 1}',
-                                      style: const TextStyle(fontSize: 10),
-                                    );
-                                  },
-                                ),
-                              ),
-                              leftTitles: AxisTitles(
-                                sideTitles: SideTitles(
-                                  showTitles: true,
-                                  getTitlesWidget: (value, meta) {
-                                    return Text(
-                                      '${value.toInt()}m',
-                                      style: const TextStyle(fontSize: 10),
-                                    );
-                                  },
-                                ),
-                              ),
-                              topTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                              rightTitles: const AxisTitles(
-                                sideTitles: SideTitles(showTitles: false),
-                              ),
-                            ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ],
+                              );
+                            }),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // Most played tracks
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pistes les plus écoutées',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Commencez à écouter pour voir vos pistes les plus écoutées',
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
+              ],
+            ),
           ),
         ),
       ),

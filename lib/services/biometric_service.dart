@@ -1,5 +1,5 @@
+import 'package:flutter/services.dart'; // Ajouté pour utiliser les sons système (SystemSound)
 import 'package:app_settings/app_settings.dart';
-import 'package:flutter_beep/flutter_beep.dart';
 import 'package:local_auth/local_auth.dart';
 
 class BiometricService {
@@ -16,7 +16,7 @@ class BiometricService {
   Future<bool> hasEnrolledBiometrics() async {
     try {
       final availableBiometrics =
-          await _localAuthentication.getAvailableBiometrics();
+      await _localAuthentication.getAvailableBiometrics();
       return availableBiometrics.isNotEmpty;
     } catch (e) {
       return false;
@@ -56,7 +56,8 @@ class BiometricService {
 
   Future<bool> openBiometricSettings() async {
     try {
-      AppSettings.openSecuritySettings();
+      // NOUVELLE COMMANDE POUR APP_SETTINGS v5+
+      await AppSettings.openAppSettings(type: AppSettingsType.security);
       return true;
     } catch (e) {
       return false;
@@ -65,9 +66,10 @@ class BiometricService {
 
   Future<void> playSuccessSound() async {
     try {
-      FlutterBeep.beep();
+      // UTILISATION DU BIP NATIF DE FLUTTER (Remplaçant flutter_beep)
+      SystemSound.play(SystemSoundType.click);
     } catch (_) {
-      // Fallback silencieux si le son ne peut pas être joué.
+      // Fallback silencieux
     }
   }
 }

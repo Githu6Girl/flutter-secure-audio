@@ -46,7 +46,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
 class BiometricGateScreen extends StatefulWidget {
   const BiometricGateScreen({Key? key}) : super(key: key);
 
@@ -57,6 +56,7 @@ class BiometricGateScreen extends StatefulWidget {
 class _BiometricGateScreenState extends State<BiometricGateScreen> {
   bool _isChecking = true;
   String? _statusMessage;
+  bool _needsConfiguration = false;
 
   @override
   void initState() {
@@ -65,58 +65,55 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
   }
 
   Future<void> _verifyBiometric() async {
+    setState(() {
+      _isChecking = true;
+      _needsConfiguration = false;
+    });
+
     final biometricService = context.read<BiometricService>();
     final isSupported = await biometricService.isBiometricAvailable();
     final hasEnrolled = await biometricService.hasEnrolledBiometrics();
 
     if (!isSupported) {
-      setState(() {
-        _isChecking = false;
-        _statusMessage = 'Aucun matériel biométrique détecté. Vous pouvez continuer vers l\'authentification Firebase.';
-      });
-      await Future.delayed(const Duration(seconds: 1));
+      // Cas rare (vieux tel sans capteur). On le laisse passer pour ne pas bloquer l'app.
       if (mounted) Navigator.of(context).pushReplacementNamed('/auth');
       return;
     }
 
     if (!hasEnrolled) {
+      // RESPECT DU PDF : Aucune empreinte, on bloque et on force à aller dans les paramètres
       setState(() {
         _isChecking = false;
-        _statusMessage = 'Aucune empreinte n\'est configurée. Ouvrez les paramètres pour en ajouter une.';
+        _needsConfiguration = true;
+        _statusMessage = 'Aucune empreinte configurée.\nVous devez sécuriser votre téléphone pour utiliser Mawja.';
       });
-      if (mounted) {
-        await Future.delayed(const Duration(milliseconds: 500));
-        await biometricService.openBiometricSettings();
-      }
+      await biometricService.openBiometricSettings();
       return;
     }
 
     final isAuthenticated = await biometricService.authenticate();
+
     if (!isAuthenticated) {
+      // RESPECT DU PDF : Échec ou Annulation -> On bloque tout ! Pas de bouton "Passer".
       if (!mounted) return;
       setState(() {
         _isChecking = false;
-        _statusMessage = 'Authentification biométrique échouée. Réessayez ou utilisez Firebase.';
       });
+
       showDialog(
         context: context,
+        barrierDismissible: false, // Empêche de fermer la popup en cliquant à côté
         builder: (_) => AlertDialog(
-          title: const Text('Authentification échouée'),
-          content: const Text('Impossible de valider l\'empreinte. Réessayez ou passez à l\'authentification Firebase.'),
-          actions: [
+          backgroundColor: const Color(0xFF1E293B),
+          title: const Text('Accès refusé', style: TextStyle(color: Colors.white)),
+          content: const Text('L\'empreinte digitale est obligatoire pour accéder à l\'application.', style: TextStyle(color: Colors.white70)),
+          actions:[
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _verifyBiometric();
+                _verifyBiometric(); // Oblige à recommencer
               },
-              child: const Text('Réessayer'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.of(context).pushReplacementNamed('/auth');
-              },
-              child: const Text('Connexion Firebase'),
+              child: const Text('Réessayer', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -124,6 +121,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
       return;
     }
 
+    // SUCCÈS ! (On joue le son et on passe à Firebase)
     await biometricService.playSuccessSound();
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/auth');
@@ -133,38 +131,45 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A1A),
       body: Center(
         child: _isChecking
             ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Vérification biométrique en cours...'),
-                ],
-              )
+          mainAxisSize: MainAxisSize.min,
+          children: const[
+            CircularProgressIndicator(color: Color(0xFF6366F1)),
+            SizedBox(height: 20),
+            Text('Vérification de sécurité...', style: TextStyle(color: Colors.white70)),
+          ],
+        )
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _statusMessage ?? 'Préparation de l\'authentification...',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (mounted) {
-                          Navigator.of(context).pushReplacementNamed('/auth');
-                        }
-                      },
-                      child: const Text('Continuer vers Firebase'),
-                    ),
-                  ],
-                ),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children:[
+              const Icon(Icons.security, size: 60, color: Color(0xFFF87171)),
+              const SizedBox(height: 20),
+              Text(
+                _statusMessage ?? 'Authentification requise',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
               ),
+              const SizedBox(height: 30),
+              if (_needsConfiguration)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                  onPressed: _verifyBiometric,
+                  child: const Text('J\'ai ajouté mon empreinte (Vérifier)', style: TextStyle(color: Colors.white)),
+                )
+              else
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                  onPressed: _verifyBiometric,
+                  child: const Text('Réessayer l\'empreinte', style: TextStyle(color: Colors.white)),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

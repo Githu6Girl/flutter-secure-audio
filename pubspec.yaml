@@ -22,8 +22,8 @@ dependencies:
   # Just_audio 0.10.x handles the newer web interop much better
   just_audio: ^0.10.5
   audio_session: ^0.1.25
-  flutter_beep: ^1.0.0
-  app_settings: ^4.1.0
+
+  app_settings: ^5.1.1
 
   # Charts & UI
   # Note: fl_chart 1.2.0 has some breaking API changes from 0.65.0
@@ -56,6 +56,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/images/
-    - assets/sounds/
+    # assets:
+  #   - assets/images/
+  #   - assets/sounds/
