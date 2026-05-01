@@ -31,10 +31,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 width: 90,
                 height: 90,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                  gradient: const LinearGradient(colors:[Color(0xFF800020), Color(0xFFC72C48)]),
                   borderRadius: BorderRadius.circular(24),
                   boxShadow:[
-                    BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.5), blurRadius: 30)
+                    BoxShadow(color: const Color(0xFF800020).withOpacity(0.5), blurRadius: 30)
                   ],
                 ),
                 child: const Icon(Icons.waves, size: 50, color: Colors.white),
@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen> {
               const SizedBox(
                 width: 40,
                 height: 40,
-                child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)), strokeWidth: 3),
+                child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF800020)), strokeWidth: 3),
               ),
             ],
           ),

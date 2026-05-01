@@ -21,6 +21,7 @@ dependencies:
   # Audio Playback
   # Just_audio 0.10.x handles the newer web interop much better
   just_audio: ^0.10.5
+  share_plus: ^7.2.2
   audio_session: ^0.1.25
 
   app_settings: ^5.1.1
@@ -52,10 +53,12 @@ dev_dependencies:
     sdk: flutter
   # Updated lints to match the SDK
   flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
-    # assets:
-  #   - assets/images/
-  #   - assets/sounds/
+flutter_icons:
+      android: true
+      ios: true
+      image_path: "assets/logo.png"

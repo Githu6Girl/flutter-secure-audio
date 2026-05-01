@@ -85,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildGlassListTile({required IconData icon, required String title, String? subtitle, Widget? trailing, VoidCallback? onTap}) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF8B5CF6)),
+      leading: Icon(icon, color: const Color(0xFFC72C48)),
       title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14)),
       subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)) : null,
       trailing: trailing ?? Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.3)),
@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+    if (_isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFF800020)));
 
     final firstName = _userData['firstName'] ?? 'User';
     final lastName = _userData['lastName'] ?? '';
@@ -120,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     width: 70, height: 70,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                      gradient: const LinearGradient(colors:[Color(0xFF800020), Color(0xFFC72C48)]),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Center(

@@ -27,7 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     // Note : AppBackground englobe tout, donc les écrans enfants doivent avoir Scaffold(backgroundColor: Colors.transparent)
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A), // Fallback
+      backgroundColor: const Color(0xFF1A050A), // Fallback
       body: Stack(
         children:[
           AppBackground(child: _screens[_currentIndex]),
@@ -40,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0A0A1A).withOpacity(0.8),
+                    color: const Color(0xFF1A050A).withOpacity(0.8),
                     border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1))),
                   ),
                   child: BottomNavigationBar(
@@ -48,7 +48,7 @@ class _MainScreenState extends State<MainScreen> {
                     elevation: 0,
                     currentIndex: _currentIndex,
                     type: BottomNavigationBarType.fixed,
-                    selectedItemColor: const Color(0xFF8B5CF6),
+                    selectedItemColor: const Color(0xFFC72C48),
                     unselectedItemColor: Colors.white.withOpacity(0.4),
                     onTap: (index) => setState(() => _currentIndex = index),
                     items: const[

@@ -47,7 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return Theme(
           data: ThemeData.dark().copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF6366F1),
+              primary: Color(0xFF800020),
               onPrimary: Colors.white,
               surface: Color(0xFF1E293B),
               onSurface: Colors.white,
@@ -150,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     child: Row(
                       children:[
-                        const Icon(Icons.calendar_today_outlined, color: Color(0xFF6366F1)),
+                        const Icon(Icons.calendar_today_outlined, color: Color(0xFF800020)),
                         const SizedBox(width: 12),
                         Text(
                           _selectedDate != null ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}' : 'Date de naissance',
@@ -186,7 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       data: ThemeData(unselectedWidgetColor: Colors.white54),
                       child: Checkbox(
                         value: _agreeToTerms,
-                        activeColor: const Color(0xFF6366F1),
+                        activeColor: const Color(0xFF800020),
                         checkColor: Colors.white,
                         onChanged: (value) => setState(() => _agreeToTerms = value ?? false),
                       ),

@@ -113,7 +113,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
                 Navigator.pop(context);
                 _verifyBiometric(); // Oblige à recommencer
               },
-              child: const Text('Réessayer', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+              child: const Text('Réessayer', style: TextStyle(color: Color(0xFF800020), fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -131,13 +131,13 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF1A050A),
       body: Center(
         child: _isChecking
             ? Column(
           mainAxisSize: MainAxisSize.min,
           children: const[
-            CircularProgressIndicator(color: Color(0xFF6366F1)),
+            CircularProgressIndicator(color: Color(0xFF800020)),
             SizedBox(height: 20),
             Text('Vérification de sécurité...', style: TextStyle(color: Colors.white70)),
           ],
@@ -157,13 +157,13 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
               const SizedBox(height: 30),
               if (_needsConfiguration)
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF800020)),
                   onPressed: _verifyBiometric,
                   child: const Text('J\'ai ajouté mon empreinte (Vérifier)', style: TextStyle(color: Colors.white)),
                 )
               else
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF800020)),
                   onPressed: _verifyBiometric,
                   child: const Text('Réessayer l\'empreinte', style: TextStyle(color: Colors.white)),
                 ),

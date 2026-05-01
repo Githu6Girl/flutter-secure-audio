@@ -1,10 +1,11 @@
+import 'dart:async'; // Pour le minuteur
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:share_plus/share_plus.dart'; // Pour le partage
 import '../services/api_service.dart';
 import '../services/favorite_service.dart';
 import '../services/audio_service.dart' as audio_svc;
-import '../widgets/app_background.dart';
 import '../widgets/glass_card.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -17,16 +18,24 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   final ApiService _apiService = ApiService();
   late AudioPlayer _audioPlayer;
+  final TextEditingController _searchController = TextEditingController();
 
   Map<String, List<Track>> _playlists = {};
   String? _selectedCategory;
   Track? _currentTrack;
   bool _isLoading = true;
   bool _isPlaying = false;
+  String _searchQuery = '';
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
-
   audio_svc.RepeatMode _repeatMode = audio_svc.RepeatMode.all;
+
+  // Variables pour le Minuteur de Sommeil
+  Timer? _sleepTimer;
+  int? _sleepMinutesLeft;
+
+  final Color mainBurgundy = const Color(0xFF800020);
+  final Color lightBurgundy = const Color(0xFFC72C48);
 
   @override
   void initState() {
@@ -68,9 +77,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       setState(() => _currentTrack = track);
       await _audioPlayer.setUrl(track.url);
       await _audioPlayer.play();
-    } catch (e) {
-      // Erreur silencieuse ou snackbar
-    }
+    } catch (e) {}
   }
 
   Future<void> _togglePlayPause() async {
@@ -116,20 +123,74 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
+  // --- FONCTIONNALITÉ PARTAGE ---
+  void _shareTrack() {
+    if (_currentTrack != null) {
+      Share.share('J\'écoute ${_currentTrack!.title} de ${_currentTrack!.artist} sur l\'application Mawja ! 🎵');
+    }
+  }
+
+  // --- FONCTIONNALITÉ MINUTEUR DE SOMMEIL ---
+  void _setSleepTimer(int minutes) {
+    _sleepTimer?.cancel();
+    if (minutes == 0) {
+      setState(() => _sleepMinutesLeft = null);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Minuteur désactivé')));
+      return;
+    }
+
+    setState(() => _sleepMinutesLeft = minutes);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('La musique s\'arrêtera dans $minutes minutes')));
+
+    _sleepTimer = Timer(Duration(minutes: minutes), () {
+      _audioPlayer.pause();
+      setState(() => _sleepMinutesLeft = null);
+    });
+  }
+
+  void _showSleepTimerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children:[
+              const Icon(Icons.mode_night, color: Colors.white, size: 40),
+              const SizedBox(height: 16),
+              const Text('Minuteur de sommeil', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              ListTile(title: const Text('Désactiver', style: TextStyle(color: Colors.white)), onTap: () { _setSleepTimer(0); Navigator.pop(context); }),
+              ListTile(title: const Text('15 minutes', style: TextStyle(color: Colors.white)), onTap: () { _setSleepTimer(15); Navigator.pop(context); }),
+              ListTile(title: const Text('30 minutes', style: TextStyle(color: Colors.white)), onTap: () { _setSleepTimer(30); Navigator.pop(context); }),
+              ListTile(title: const Text('60 minutes', style: TextStyle(color: Colors.white)), onTap: () { _setSleepTimer(60); Navigator.pop(context); }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0A0A1A),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF6366F1))),
-      );
+      return Scaffold(backgroundColor: const Color(0xFF1A050A), body: Center(child: CircularProgressIndicator(color: lightBurgundy)));
     }
 
     final favoriteService = context.watch<FavoriteService>();
     final isFavorite = _currentTrack != null && favoriteService.isFavorite(_currentTrack!.id);
 
+    List<Track> currentList = [];
+    if (_selectedCategory != null && _playlists[_selectedCategory] != null) {
+      currentList = _playlists[_selectedCategory]!.where((track) =>
+      track.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          track.artist.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    }
+
     return Scaffold(
-      backgroundColor: Colors.transparent, // Pour laisser voir l'AppBackground depuis MainScreen
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Lecteur', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -137,7 +198,24 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ),
       body: Column(
         children:[
-          // Sélecteur de catégories "Glass"
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Rechercher un audio...',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.05),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide(color: lightBurgundy, width: 1.5)),
+              ),
+            ),
+          ),
+
           if (_playlists.isNotEmpty)
             SizedBox(
               height: 50,
@@ -149,22 +227,17 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedCategory = category),
+                      onTap: () {
+                        setState(() { _selectedCategory = category; _searchController.clear(); _searchQuery = ''; });
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF6366F1).withOpacity(0.3) : Colors.white.withOpacity(0.05),
+                          color: isSelected ? mainBurgundy.withOpacity(0.5) : Colors.white.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF6366F1) : Colors.white.withOpacity(0.1),
-                          ),
+                          border: Border.all(color: isSelected ? lightBurgundy : Colors.white.withOpacity(0.1)),
                         ),
-                        child: Center(
-                          child: Text(
-                            category,
-                            style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-                          ),
-                        ),
+                        child: Center(child: Text(category, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal))),
                       ),
                     ),
                   );
@@ -173,60 +246,40 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
           const SizedBox(height: 10),
 
-          // Liste des pistes
           Expanded(
-            child: _selectedCategory != null && _playlists[_selectedCategory]!.isNotEmpty
+            child: currentList.isNotEmpty
                 ? ListView.builder(
-              itemCount: _playlists[_selectedCategory]!.length,
+              itemCount: currentList.length,
               itemBuilder: (context, index) {
-                final track = _playlists[_selectedCategory]![index];
+                final track = currentList[index];
                 final isCurrentTrack = _currentTrack?.id == track.id;
 
                 return Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isCurrentTrack ? Colors.white.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: BoxDecoration(color: isCurrentTrack ? Colors.white.withOpacity(0.1) : Colors.transparent, borderRadius: BorderRadius.circular(12)),
                   child: ListTile(
                     leading: Container(
                       width: 40, height: 40,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF0EA5E9)]),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: isCurrentTrack && _isPlaying
-                          ? const Icon(Icons.bar_chart, color: Colors.white)
-                          : const Icon(Icons.music_note, color: Colors.white54),
+                      decoration: BoxDecoration(gradient: LinearGradient(colors:[mainBurgundy, lightBurgundy]), borderRadius: BorderRadius.circular(10)),
+                      child: isCurrentTrack && _isPlaying ? const Icon(Icons.bar_chart, color: Colors.white) : const Icon(Icons.music_note, color: Colors.white54),
                     ),
                     title: Text(track.title, style: TextStyle(color: Colors.white, fontWeight: isCurrentTrack ? FontWeight.bold : FontWeight.normal)),
                     subtitle: Text(track.artist, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                    trailing: IconButton(
-                      icon: Icon(
-                        favoriteService.isFavorite(track.id) ? Icons.favorite : Icons.favorite_border,
-                        color: favoriteService.isFavorite(track.id) ? const Color(0xFFEC4899) : Colors.white30,
-                      ),
-                      onPressed: () {
-                        if (favoriteService.isFavorite(track.id)) favoriteService.removeFromFavorites(track.id);
-                        else favoriteService.addToFavorites(track);
-                      },
-                    ),
                     onTap: () => _playTrack(track),
                   ),
                 );
               },
             )
-                : const Center(child: Text('Aucune piste', style: TextStyle(color: Colors.white54))),
+                : Center(child: Text(_searchQuery.isNotEmpty ? 'Aucun résultat' : 'Aucune piste', style: const TextStyle(color: Colors.white54))),
           ),
 
-          // Lecteur en cours (Le beau composant en bas)
           if (_currentTrack != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: GlassCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
-                  children: [
+                  children:[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children:[
@@ -241,8 +294,22 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             ],
                           ),
                         ),
+                        // BOUTON MINUTEUR DE SOMMEIL
                         IconButton(
-                          icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? const Color(0xFFEC4899) : Colors.white),
+                          icon: Icon(
+                            _sleepMinutesLeft != null ? Icons.mode_night : Icons.mode_night_outlined,
+                            color: _sleepMinutesLeft != null ? lightBurgundy : Colors.white,
+                          ),
+                          onPressed: _showSleepTimerDialog,
+                        ),
+                        // BOUTON PARTAGER
+                        IconButton(
+                          icon: const Icon(Icons.share_outlined, color: Colors.white),
+                          onPressed: _shareTrack,
+                        ),
+                        // BOUTON FAVORIS
+                        IconButton(
+                          icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? lightBurgundy : Colors.white),
                           onPressed: () {
                             if (isFavorite) favoriteService.removeFromFavorites(_currentTrack!.id);
                             else favoriteService.addToFavorites(_currentTrack!);
@@ -251,18 +318,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    // Barre de progression
                     Row(
                       children:[
                         Text('${_currentPosition.inMinutes}:${(_currentPosition.inSeconds % 60).toString().padLeft(2, '0')}', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
                         Expanded(
                           child: SliderTheme(
                             data: SliderThemeData(
-                              trackHeight: 3,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                              activeTrackColor: const Color(0xFF6366F1),
-                              inactiveTrackColor: Colors.white.withOpacity(0.1),
-                              thumbColor: Colors.white,
+                              trackHeight: 3, thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                              activeTrackColor: lightBurgundy, inactiveTrackColor: Colors.white.withOpacity(0.1), thumbColor: Colors.white,
                             ),
                             child: Slider(
                               value: _currentPosition.inSeconds.toDouble().clamp(0.0, _totalDuration.inSeconds.toDouble() > 0 ? _totalDuration.inSeconds.toDouble() : 1.0),
@@ -274,37 +337,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         Text('${_totalDuration.inMinutes}:${(_totalDuration.inSeconds % 60).toString().padLeft(2, '0')}', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
                       ],
                     ),
-                    // Contrôles
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children:[
-                        IconButton(
-                          icon: Icon(_getRepeatIcon(), color: _repeatMode == audio_svc.RepeatMode.off ? Colors.white30 : const Color(0xFF6366F1)),
-                          onPressed: _toggleRepeat,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_previous, color: Colors.white, size: 30),
-                          onPressed: _skipPrevious,
-                        ),
+                        IconButton(icon: Icon(_getRepeatIcon(), color: _repeatMode == audio_svc.RepeatMode.off ? Colors.white30 : lightBurgundy), onPressed: _toggleRepeat),
+                        IconButton(icon: const Icon(Icons.skip_previous, color: Colors.white, size: 30), onPressed: _skipPrevious),
                         Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)]),
-                            boxShadow:[BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.4), blurRadius: 15)],
-                          ),
-                          child: IconButton(
-                            icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 32),
-                            onPressed: _togglePlayPause,
-                          ),
+                          decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors:[mainBurgundy, lightBurgundy]), boxShadow:[BoxShadow(color: mainBurgundy.withOpacity(0.4), blurRadius: 15)]),
+                          child: IconButton(icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white, size: 32), onPressed: _togglePlayPause),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_next, color: Colors.white, size: 30),
-                          onPressed: _skipNext,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.shuffle, color: Colors.white30), // UI design, logic to add later if needed
-                          onPressed: () {},
-                        ),
+                        IconButton(icon: const Icon(Icons.skip_next, color: Colors.white, size: 30), onPressed: _skipNext),
                       ],
                     ),
                   ],
@@ -318,7 +360,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void dispose() {
+    _sleepTimer?.cancel();
     _audioPlayer.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 }

@@ -87,7 +87,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors:[Color(0xFFEC4899), Color(0xFF8B5CF6)],
+                      colors:[Color(0xFFEC4899), Color(0xFFC72C48)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow:[

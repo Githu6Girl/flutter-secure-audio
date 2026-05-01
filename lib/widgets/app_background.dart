@@ -13,10 +13,10 @@ class AppBackground extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors:[
-            Color(0xFF0A0A1A), // Noir bleuté profond
-            Color(0xFF0D1B3E), // Bleu marine
-            Color(0xFF0A1628), // Bleu très sombre
-            Color(0xFF06101E), // Presque noir
+            Color(0xFF1A050A), // Presque noir avec reflet bordeaux
+            Color(0xFF3D0C1A), // Bordeaux foncé
+            Color(0xFF24040E), // Rouge très sombre
+            Color(0xFF110005), // Noir bordeaux
           ],
           stops:[0.0, 0.4, 0.7, 1.0],
         ),

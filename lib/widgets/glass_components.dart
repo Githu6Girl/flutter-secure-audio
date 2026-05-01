@@ -32,7 +32,7 @@ class GlassTextField extends StatelessWidget {
         hintText: hint,
         labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
         hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-        prefixIcon: Icon(prefixIcon, color: const Color(0xFF6366F1)),
+        prefixIcon: Icon(prefixIcon, color: const Color(0xFF800020)),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withOpacity(0.07),
@@ -42,7 +42,7 @@ class GlassTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF800020), width: 2),
         ),
       ),
     );
@@ -69,10 +69,10 @@ class GradientButton extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: onPressed == null
             ? LinearGradient(colors:[Colors.grey.withOpacity(0.3), Colors.grey.withOpacity(0.3)])
-            : const LinearGradient(colors:[Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+            : const LinearGradient(colors:[Color(0xFF800020), Color(0xFFC72C48)]),
         borderRadius: BorderRadius.circular(14),
         boxShadow: onPressed == null ? [] :[
-          BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))
+          BoxShadow(color: const Color(0xFF800020).withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 4))
         ],
       ),
       child: ElevatedButton(

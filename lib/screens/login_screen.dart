@@ -56,7 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children:[
-                  const Icon(Icons.waves, color: Color(0xFF6366F1), size: 48),
+                  const Icon(Icons.waves, color: Color(0xFF800020), size: 48),
                   const SizedBox(height: 16),
                   const Text('Connexion', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: () {},
-                      child: const Text('Mot de passe oublié?', style: TextStyle(color: Color(0xFF8B5CF6))),
+                      child: const Text('Mot de passe oublié?', style: TextStyle(color: Color(0xFFC72C48))),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text('Pas encore de compte? ', style: TextStyle(color: Colors.white.withOpacity(0.6))),
                       TextButton(
                         onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                        child: const Text('Inscrivez-vous', style: TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+                        child: const Text('Inscrivez-vous', style: TextStyle(color: Color(0xFF800020), fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
