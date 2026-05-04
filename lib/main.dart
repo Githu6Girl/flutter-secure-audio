@@ -8,9 +8,11 @@ import 'services/biometric_service.dart';
 import 'services/favorite_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -23,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
+      providers:[
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<BiometricService>(create: (_) => BiometricService()),
         ChangeNotifierProvider<FavoriteService>(
@@ -31,13 +33,15 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Audio App',
+        title: 'Mawja',
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const BiometricGateScreen(),
+        themeMode: ThemeMode.dark, // Thème Burgundy
         debugShowCheckedModeBanner: false,
+        initialRoute: '/splash', // Démarre sur le splash screen (corrige l'écran blanc)
         routes: {
+          '/splash': (_) => const SplashScreen(),
+          '/': (_) => const BiometricGateScreen(),
           '/auth': (_) => const AuthWrapper(),
           '/home': (_) => const MainScreen(),
           '/login': (_) => const LoginScreen(),
@@ -46,6 +50,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 class BiometricGateScreen extends StatefulWidget {
   const BiometricGateScreen({Key? key}) : super(key: key);
 
@@ -75,13 +80,11 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
     final hasEnrolled = await biometricService.hasEnrolledBiometrics();
 
     if (!isSupported) {
-      // Cas rare (vieux tel sans capteur). On le laisse passer pour ne pas bloquer l'app.
       if (mounted) Navigator.of(context).pushReplacementNamed('/auth');
       return;
     }
 
     if (!hasEnrolled) {
-      // RESPECT DU PDF : Aucune empreinte, on bloque et on force à aller dans les paramètres
       setState(() {
         _isChecking = false;
         _needsConfiguration = true;
@@ -94,7 +97,6 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
     final isAuthenticated = await biometricService.authenticate();
 
     if (!isAuthenticated) {
-      // RESPECT DU PDF : Échec ou Annulation -> On bloque tout ! Pas de bouton "Passer".
       if (!mounted) return;
       setState(() {
         _isChecking = false;
@@ -102,7 +104,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
 
       showDialog(
         context: context,
-        barrierDismissible: false, // Empêche de fermer la popup en cliquant à côté
+        barrierDismissible: false,
         builder: (_) => AlertDialog(
           backgroundColor: const Color(0xFF1E293B),
           title: const Text('Accès refusé', style: TextStyle(color: Colors.white)),
@@ -111,9 +113,9 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _verifyBiometric(); // Oblige à recommencer
+                _verifyBiometric();
               },
-              child: const Text('Réessayer', style: TextStyle(color: Color(0xFF800020), fontWeight: FontWeight.bold)),
+              child: const Text('Réessayer', style: TextStyle(color: Color(0xFFC72C48), fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -121,7 +123,6 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
       return;
     }
 
-    // SUCCÈS ! (On joue le son et on passe à Firebase)
     await biometricService.playSuccessSound();
     if (mounted) {
       Navigator.of(context).pushReplacementNamed('/auth');
@@ -137,7 +138,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
             ? Column(
           mainAxisSize: MainAxisSize.min,
           children: const[
-            CircularProgressIndicator(color: Color(0xFF800020)),
+            CircularProgressIndicator(color: Color(0xFFC72C48)),
             SizedBox(height: 20),
             Text('Vérification de sécurité...', style: TextStyle(color: Colors.white70)),
           ],
@@ -147,7 +148,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children:[
-              const Icon(Icons.security, size: 60, color: Color(0xFFF87171)),
+              const Icon(Icons.security, size: 60, color: Color(0xFFC72C48)),
               const SizedBox(height: 20),
               Text(
                 _statusMessage ?? 'Authentification requise',
@@ -185,7 +186,8 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            backgroundColor: Color(0xFF1A050A),
+            body: Center(child: CircularProgressIndicator(color: Color(0xFFC72C48))),
           );
         }
         if (snapshot.hasData) {

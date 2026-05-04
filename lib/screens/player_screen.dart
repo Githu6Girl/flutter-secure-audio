@@ -1,8 +1,8 @@
-import 'dart:async'; // Pour le minuteur
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:share_plus/share_plus.dart'; // Pour le partage
+import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 import '../services/favorite_service.dart';
 import '../services/audio_service.dart' as audio_svc;
@@ -30,7 +30,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Duration _totalDuration = Duration.zero;
   audio_svc.RepeatMode _repeatMode = audio_svc.RepeatMode.all;
 
-  // Variables pour le Minuteur de Sommeil
   Timer? _sleepTimer;
   int? _sleepMinutesLeft;
 
@@ -75,6 +74,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Future<void> _playTrack(Track track) async {
     try {
       setState(() => _currentTrack = track);
+      // RETOUR À LA LECTURE NORMALE SANS NOTIFICATION
       await _audioPlayer.setUrl(track.url);
       await _audioPlayer.play();
     } catch (e) {}
@@ -123,14 +123,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
-  // --- FONCTIONNALITÉ PARTAGE ---
   void _shareTrack() {
     if (_currentTrack != null) {
       Share.share('J\'écoute ${_currentTrack!.title} de ${_currentTrack!.artist} sur l\'application Mawja ! 🎵');
     }
   }
 
-  // --- FONCTIONNALITÉ MINUTEUR DE SOMMEIL ---
   void _setSleepTimer(int minutes) {
     _sleepTimer?.cancel();
     if (minutes == 0) {
@@ -138,10 +136,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Minuteur désactivé')));
       return;
     }
-
     setState(() => _sleepMinutesLeft = minutes);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('La musique s\'arrêtera dans $minutes minutes')));
-
     _sleepTimer = Timer(Duration(minutes: minutes), () {
       _audioPlayer.pause();
       setState(() => _sleepMinutesLeft = null);
@@ -181,7 +177,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final favoriteService = context.watch<FavoriteService>();
     final isFavorite = _currentTrack != null && favoriteService.isFavorite(_currentTrack!.id);
 
-    List<Track> currentList = [];
+    List<Track> currentList =[];
     if (_selectedCategory != null && _playlists[_selectedCategory] != null) {
       currentList = _playlists[_selectedCategory]!.where((track) =>
       track.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -294,7 +290,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             ],
                           ),
                         ),
-                        // BOUTON MINUTEUR DE SOMMEIL
                         IconButton(
                           icon: Icon(
                             _sleepMinutesLeft != null ? Icons.mode_night : Icons.mode_night_outlined,
@@ -302,12 +297,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           ),
                           onPressed: _showSleepTimerDialog,
                         ),
-                        // BOUTON PARTAGER
                         IconButton(
                           icon: const Icon(Icons.share_outlined, color: Colors.white),
                           onPressed: _shareTrack,
                         ),
-                        // BOUTON FAVORIS
                         IconButton(
                           icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border, color: isFavorite ? lightBurgundy : Colors.white),
                           onPressed: () {
