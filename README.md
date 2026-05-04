@@ -146,4 +146,4 @@ Developed as a university academic project. Feel free to fork, explore the code,
 
 ---
 
-## 📁 Project Structure
+
